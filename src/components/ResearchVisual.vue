@@ -564,7 +564,7 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0;
   opacity: 0;
-  transition: opacity 0.35s ease;
+  transition: opacity var(--duration-slow) var(--ease-out);
   cursor: grab;
 }
 .product-scene-canvas:active {

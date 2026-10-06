@@ -30,7 +30,10 @@ import {
   uploadHomepageModel,
   uploadSponsorLogo,
 } from '../services/authApi'
-import { showSubmissionFeedback } from '../services/submissionFeedback'
+import { confirmAction } from '../services/confirm'
+import { toast } from '../services/toast'
+import { useUnsavedGuard } from '../composables/useUnsavedGuard'
+import LoadingSkeleton from '../components/LoadingSkeleton.vue'
 
 const tabs = [
   { id: 'identity', label: '品牌与首屏', icon: LayoutTemplate },
@@ -65,6 +68,18 @@ const sectionToggles = [
 ]
 
 const activeTab = ref('identity')
+// Content keys each editor section writes; used to mark sections with unsaved edits.
+const tabKeys = {
+  identity: ['profile'],
+  models: ['heroModels'],
+  sections: ['sections'],
+  display: ['display', 'featuredAdvisorProfileIds', 'featuredMemberProfileIds', 'featuredProjectIds'],
+  proof: ['awards', 'proofItems'],
+  updates: ['updates'],
+  sponsors: ['sponsors'],
+  links: ['externalLinks'],
+}
+const savedContent = ref(null)
 const content = ref(null)
 const members = ref([])
 const projects = ref([])
@@ -82,6 +97,31 @@ const updatedAt = ref(null)
 const updatedBy = ref('')
 const featuredTeacherSearch = ref('')
 const featuredMemberSearch = ref('')
+
+const sectionSignature = (source, id) => JSON.stringify(tabKeys[id].map((key) => source?.[key] ?? null))
+const dirtyTabs = computed(() =>
+  content.value && savedContent.value
+    ? tabs
+        .filter((tab) => sectionSignature(content.value, tab.id) !== sectionSignature(savedContent.value, tab.id))
+        .map((tab) => tab.id)
+    : [],
+)
+const dirty = computed(() => dirtyTabs.value.length > 0)
+useUnsavedGuard(dirty, { message: '主页内容还有未保存的修改，离开后将丢失。' })
+
+function rememberSaved() {
+  savedContent.value = JSON.parse(JSON.stringify(content.value))
+}
+
+async function discardChanges() {
+  const confirmed = await confirmAction({
+    title: '放弃全部未保存的修改？',
+    message: `${dirtyTabs.value.length} 个分区的修改将恢复为上次保存的版本。`,
+    confirmText: '放弃修改',
+    tone: 'danger',
+  })
+  if (confirmed) content.value = JSON.parse(JSON.stringify(savedContent.value))
+}
 
 const teacherOptions = computed(() => members.value.filter((member) => member.role === 'TEACHER'))
 const memberOptions = computed(() =>
@@ -118,6 +158,7 @@ onMounted(async () => {
     projects.value = projectData
     updatedAt.value = homepage.updatedAt
     updatedBy.value = homepage.updatedBy || ''
+    rememberSaved()
   } catch (error) {
     errorMessage.value = error.message
   } finally {
@@ -262,18 +303,17 @@ async function save() {
   try {
     const saved = await updateHomepageContent(content.value)
     content.value = structuredClone(saved.content)
+    content.value.featuredAdvisorProfileIds ||= content.value.advisorProfileId ? [content.value.advisorProfileId] : []
+    content.value.display.advisorLimit ||= 6
+    content.value.heroModels ||= []
     updatedAt.value = saved.updatedAt
     updatedBy.value = saved.updatedBy || ''
-    showSubmissionFeedback({
-      eyebrow: 'HOMEPAGE PUBLISHED',
-      title: '主页内容已保存',
-      message: '所有分区已经作为同一版本更新，公开展示页刷新后生效。',
-      confirmLabel: '继续编辑',
-    })
+    rememberSaved()
+    toast.success('所有分区已经作为同一版本更新，公开展示页刷新后生效。', { title: '主页内容已保存' })
   } catch (error) {
     const firstFieldError = Object.values(error.fields || {})[0]
     errorMessage.value = firstFieldError ? `${error.message}：${firstFieldError}` : error.message
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    toast.error(errorMessage.value, { title: '保存失败，修改已保留' })
   } finally {
     saving.value = false
   }
@@ -294,7 +334,10 @@ function formatTime(value) {
   >
     <div v-if="message" class="save-message" role="status"><Check :size="17" aria-hidden="true" />{{ message }}</div>
     <div v-if="errorMessage" class="form-alert" role="alert">{{ errorMessage }}</div>
-    <div v-if="loading" class="portal-state">正在读取主页内容…</div>
+    <div v-if="loading" class="homepage-editor">
+      <div class="homepage-editor-nav"><LoadingSkeleton :rows="6" /></div>
+      <div class="homepage-editor-section"><LoadingSkeleton variant="detail" :rows="4" /></div>
+    </div>
 
     <form v-else-if="content" class="homepage-editor" @submit.prevent="save">
       <aside class="homepage-editor-nav">
@@ -306,10 +349,14 @@ function formatTime(value) {
           v-for="tab in tabs"
           :key="tab.id"
           type="button"
-          :class="{ active: activeTab === tab.id }"
+          :class="{ active: activeTab === tab.id, dirty: dirtyTabs.includes(tab.id) }"
+          :aria-current="activeTab === tab.id ? 'true' : undefined"
           @click="activeTab = tab.id"
         >
-          <component :is="tab.icon" :size="17" aria-hidden="true" />{{ tab.label }}
+          <component :is="tab.icon" :size="17" aria-hidden="true" />{{ tab.label
+          }}<i v-if="dirtyTabs.includes(tab.id)" class="homepage-dirty-dot" title="有未保存的修改"
+            ><span class="sr-only">（有未保存的修改）</span></i
+          >
         </button>
         <div>
           <small>最后保存</small><strong>{{ formatTime(updatedAt) }}</strong
@@ -1227,11 +1274,20 @@ function formatTime(value) {
           </section>
         </section>
 
-        <footer class="homepage-save-bar">
-          <div><strong>保存整份主页配置</strong><span>所有分区会作为一个版本同时更新。</span></div>
+        <footer class="homepage-save-bar" :class="{ dirty }">
+          <div>
+            <strong>{{ dirty ? `${dirtyTabs.length} 个分区有未保存的修改` : '所有修改均已保存' }}</strong
+            ><span>所有分区会作为一个版本同时更新。</span>
+          </div>
           <a href="/" target="_blank" rel="noopener noreferrer"
             >预览公开首页 <ExternalLink :size="16" aria-hidden="true" /></a
-          ><button class="portal-primary" type="submit" :disabled="saving || uploadingLogo || uploadingModelIndex >= 0">
+          ><button v-if="dirty" class="ui-btn ui-btn--ghost" type="button" :disabled="saving" @click="discardChanges">
+            放弃修改</button
+          ><button
+            class="portal-primary"
+            type="submit"
+            :disabled="!dirty || saving || uploadingLogo || uploadingModelIndex >= 0"
+          >
             <Save :size="17" aria-hidden="true" />{{ saving ? '保存中…' : '保存主页内容' }}
           </button>
         </footer>

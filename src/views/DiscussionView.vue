@@ -34,6 +34,7 @@ import {
   updateDiscussion,
   updateDiscussionReply,
 } from '../services/authApi'
+import { confirmAction } from '../services/confirm'
 
 const router = useRouter()
 const route = useRoute()
@@ -109,7 +110,15 @@ async function refresh() {
 async function submitPost() {
   if (!requireParticipation()) return
   if (!validRichContent(form.content, form.length, 5000)) return
-  if (form.announcement && !window.confirm('公告发布后不能修改，并会向所有站内账号发送通知。确认发布吗？')) return
+  if (
+    form.announcement &&
+    !(await confirmAction({
+      title: '发布为公告？',
+      message: '公告发布后不能修改，并会向所有站内账号发送通知。',
+      confirmText: '发布公告',
+    }))
+  )
+    return
   await run(async () => {
     const created = await createDiscussion({
       title: form.title.trim(),
@@ -145,7 +154,15 @@ async function savePost(post) {
 
 async function removePost(post) {
   if (!requireParticipation()) return
-  if (!window.confirm(`确认删除《${post.title}》及其全部回复吗？`)) return
+  if (
+    !(await confirmAction({
+      title: '删除这篇讨论？',
+      message: `《${post.title}》及其全部回复将被删除，且无法恢复。`,
+      confirmText: '删除讨论',
+      tone: 'danger',
+    }))
+  )
+    return
   await run(async () => {
     await deleteDiscussion(post.id)
     posts.value = posts.value.filter((item) => item.id !== post.id)
@@ -198,7 +215,15 @@ async function saveReply(reply) {
 
 async function removeReply(reply) {
   if (!requireParticipation()) return
-  if (!window.confirm('确认删除这条回复吗？')) return
+  if (
+    !(await confirmAction({
+      title: '删除这条回复？',
+      message: '删除后无法恢复。',
+      confirmText: '删除回复',
+      tone: 'danger',
+    }))
+  )
+    return
   await run(async () => {
     replacePost(await deleteDiscussionReply(reply.id))
     successMessage.value = '回复已删除。'

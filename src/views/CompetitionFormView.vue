@@ -17,6 +17,7 @@ import {
   updateCompetition,
 } from '../services/authApi'
 import { showSubmissionFeedback } from '../services/submissionFeedback'
+import { confirmAction } from '../services/confirm'
 
 const route = useRoute()
 const router = useRouter()
@@ -259,7 +260,15 @@ async function loadExistingImages(item) {
 }
 
 async function removeExistingImage(image) {
-  if (!window.confirm(`确定删除这张比赛图片吗？\n${image.description}`)) return
+  if (
+    !(await confirmAction({
+      title: '删除这张比赛图片？',
+      message: image.description || '删除后无法恢复。',
+      confirmText: '删除图片',
+      tone: 'danger',
+    }))
+  )
+    return
   deletingImageId.value = image.id
   imageError.value = ''
   try {

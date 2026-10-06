@@ -4,6 +4,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PortalShell from '../components/PortalShell.vue'
 import { abandonBounty, claimBounty, getBountyDetail } from '../services/authApi'
+import { confirmAction } from '../services/confirm'
 
 const route = useRoute()
 const router = useRouter()
@@ -59,7 +60,16 @@ async function claim() {
 }
 
 async function abandon() {
-  if (!window.confirm('确认放弃这条悬赏？放弃后名额会归还，但你不能再接取它。')) return
+  if (
+    !(await confirmAction({
+      title: '放弃这条悬赏？',
+      message: '放弃后名额会归还，但你不能再接取它。',
+      confirmText: '放弃悬赏',
+      cancelText: '继续完成',
+      tone: 'danger',
+    }))
+  )
+    return
   working.value = true
   actionError.value = ''
   actionStatus.value = ''

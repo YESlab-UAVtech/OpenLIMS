@@ -31,6 +31,7 @@ import {
   uploadRecruitmentPortfolioImages,
 } from '../services/authApi'
 import { showSubmissionFeedback } from '../services/submissionFeedback'
+import { confirmAction } from '../services/confirm'
 
 const stages = ['SIGNUP', 'SCREENING', 'INTERVIEW', 'SKILL_TEST', 'FORMAL_MEMBER']
 // PROBATION 已停用：仅保留标签以便历史报名记录仍能正确显示阶段文字。
@@ -206,7 +207,16 @@ async function bookInterview(sessionId) {
 }
 
 async function cancelInterview() {
-  if (!window.confirm('确认取消当前面试预约吗？取消后需要重新选择场次。')) return
+  if (
+    !(await confirmAction({
+      title: '取消当前面试预约？',
+      message: '取消后需要重新选择面试场次。',
+      confirmText: '取消预约',
+      cancelText: '保留预约',
+      tone: 'danger',
+    }))
+  )
+    return
   saving.value = true
   errorMessage.value = ''
   successMessage.value = ''

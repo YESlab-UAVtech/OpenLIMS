@@ -4,6 +4,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import PortalShell from '../components/PortalShell.vue'
 import { confirmBountyPrizeReceived, getMyTask, submitMyTask } from '../services/authApi'
+import { confirmAction } from '../services/confirm'
 
 const route = useRoute()
 const task = ref(null)
@@ -90,7 +91,15 @@ async function submit() {
 }
 
 async function confirmPrizeReceived() {
-  if (!window.confirm('请确认你已实际收到这份线下奖金。确认后将记录你的账号和时间，不能撤销。')) return
+  if (
+    !(await confirmAction({
+      title: '确认已收到奖金？',
+      message: '请确认你已实际收到这份线下奖金。',
+      details: ['确认后将记录你的账号和时间。', '此操作不能撤销。'],
+      confirmText: '确认已收到',
+    }))
+  )
+    return
   working.value = true
   actionError.value = ''
   try {

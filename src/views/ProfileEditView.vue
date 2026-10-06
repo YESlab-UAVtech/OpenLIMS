@@ -32,6 +32,7 @@ import {
   updateOwnShowcase,
 } from '../services/authApi'
 import { showSubmissionFeedback } from '../services/submissionFeedback'
+import { confirmAction } from '../services/confirm'
 
 const router = useRouter()
 const profile = ref(null)
@@ -118,7 +119,15 @@ async function uploadAvatar() {
 }
 
 async function removeAvatar() {
-  if (!window.confirm('确定移除当前头像吗？')) return
+  if (
+    !(await confirmAction({
+      title: '移除当前头像？',
+      message: '移除后将显示姓名首字，你可以随时重新上传。',
+      confirmText: '移除头像',
+      tone: 'danger',
+    }))
+  )
+    return
   avatarSaving.value = true
   message.value = ''
   errorMessage.value = ''

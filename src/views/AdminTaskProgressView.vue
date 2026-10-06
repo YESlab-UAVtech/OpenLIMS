@@ -3,6 +3,8 @@ import { ArrowLeft, CheckCheck, ListChecks, X } from '@lucide/vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import PortalShell from '../components/PortalShell.vue'
+import { confirmAction } from '../services/confirm'
+import { useToastFeedback } from '../composables/useToastFeedback'
 import SubtaskSubmissionsPanel from '../components/SubtaskSubmissionsPanel.vue'
 import TaskSupplementMembers from '../components/TaskSupplementMembers.vue'
 import { getTaskProgress, removeTaskAssignment, reviewTaskAssignment } from '../services/authApi'
@@ -32,6 +34,25 @@ const statusLabels = {
 const roleLabels = { TEACHER: '教师', CORE_STUDENT: '核心学生', MEMBER: '普通成员' }
 
 const task = computed(() => progress.value?.task || null)
+const rowFilter = ref('ALL')
+const statusRank = { SUBMITTED: 0, PENDING: 1, REJECTED: 2, APPROVED: 3 }
+const rowFilters = computed(() => {
+  const rows = progress.value?.assignments || []
+  return [
+    { value: 'ALL', label: '全部', count: rows.length },
+    ...Object.keys(statusRank).map((value) => ({
+      value,
+      label: statusLabels[value],
+      count: rows.filter((row) => row.status === value).length,
+    })),
+  ].filter((item) => item.value === 'ALL' || item.count)
+})
+const visibleRows = computed(() =>
+  (progress.value?.assignments || [])
+    .filter((row) => rowFilter.value === 'ALL' || row.status === rowFilter.value)
+    .sort((a, b) => (statusRank[a.status] ?? 9) - (statusRank[b.status] ?? 9)),
+)
+useToastFeedback({ success: successMessage, error: errorMessage, keepErrorInline: () => !task.value })
 
 async function load() {
   refreshing.value = true
@@ -87,7 +108,15 @@ async function supplementCompleted(result) {
 }
 
 async function removeAssignment(row) {
-  if (!window.confirm(`确认移除 ${row.name} 的任务对象吗？`)) return
+  if (
+    !(await confirmAction({
+      title: `移除 ${row.name}？`,
+      message: '该成员将不再是这项任务的对象，其提交记录也不再计入进度。',
+      confirmText: '移除对象',
+      tone: 'danger',
+    }))
+  )
+    return
   working.value = true
   try {
     await removeTaskAssignment(route.params.taskId, row.assignmentId)
@@ -188,84 +217,112 @@ async function removeAssignment(row) {
 
       <section class="task-rows" aria-labelledby="task-rows-title">
         <h3 id="task-rows-title">逐人明细</h3>
+        <div
+          v-if="progress.assignments.length"
+          class="admin-chip-filters is-inline"
+          role="group"
+          aria-label="按状态筛选"
+        >
+          <button
+            v-for="item in rowFilters"
+            :key="item.value"
+            type="button"
+            :class="{ active: rowFilter === item.value }"
+            :aria-pressed="rowFilter === item.value"
+            @click="rowFilter = item.value"
+          >
+            {{ item.label }}<span>{{ item.count }}</span>
+          </button>
+        </div>
         <p v-if="!progress.assignments.length" class="empty-note">还没有发放对象。</p>
-        <article v-for="row in progress.assignments" :key="row.assignmentId" class="task-row">
-          <header>
-            <div>
-              <strong>{{ row.name }}</strong>
-              <span>{{ row.memberCode }} · {{ roleLabels[row.role] }} · {{ row.grade || '年级未填' }}</span>
-            </div>
-            <b :data-status="row.status">{{ statusLabels[row.status] }}</b>
-          </header>
-          <p>
-            已提交 {{ row.submittedSubtasks }} / {{ row.totalSubtasks }}
-            <span v-if="row.overdue" class="overdue">已逾期</span>
-            <span v-if="row.awardedPoints != null">· 已计 {{ row.awardedPoints }} 分</span>
-            <span v-else-if="row.pointsSkippedReason" class="task-skip">· 未计分：{{ row.pointsSkippedReason }}</span>
-          </p>
-          <p v-if="row.completionNote" class="task-row-note">完成说明：{{ row.completionNote }}</p>
-          <p v-if="row.reviewComment" class="task-row-note">
-            审核意见：{{ row.reviewComment }}（{{ row.reviewedBy }}，{{ row.reviewedAt?.slice(0, 10) }}）
-          </p>
-
-          <div class="task-card-actions">
-            <button
-              v-if="row.status === 'SUBMITTED'"
-              type="button"
-              :disabled="working || task.status === 'CLOSED'"
-              :title="task.status === 'CLOSED' ? '任务已由管理员结束，不能再审核或驳回' : ''"
-              @click="openReview(row.assignmentId)"
-            >
-              <CheckCheck :size="15" aria-hidden="true" />人工审核
-            </button>
-            <button
-              type="button"
-              :aria-expanded="submissionsAssignmentId === row.assignmentId"
-              @click="toggleSubmissions(row.assignmentId)"
-            >
-              <ListChecks :size="15" aria-hidden="true" />查看提交内容
-            </button>
-            <button
-              v-if="task.status === 'PUBLISHED' && row.status === 'PENDING'"
-              type="button"
-              class="danger"
-              :disabled="working"
-              @click="removeAssignment(row)"
-            >
-              <X :size="15" aria-hidden="true" />移除对象
-            </button>
-          </div>
-
-          <form v-if="activeAssignmentId === row.assignmentId" class="task-review-form" @submit.prevent="submitReview">
-            <label
-              >审核结论<select v-model="review.decision">
-                <option value="APPROVED">通过并发放积分</option>
-                <option value="REJECTED">驳回（不发分）</option>
-              </select></label
-            >
-            <label class="full">审核意见<input v-model.trim="review.comment" maxlength="1000" /></label>
-            <p v-if="review.decision === 'APPROVED'" class="task-skip full">
-              通过只记录结论；积分在任务到期后统一结算，凭证使用任务详情站内路径。
+        <TransitionGroup tag="div" name="list" class="task-row-list">
+          <article v-for="row in visibleRows" :key="row.assignmentId" class="task-row">
+            <header>
+              <div>
+                <strong>{{ row.name }}</strong>
+                <span>{{ row.memberCode }} · {{ roleLabels[row.role] }} · {{ row.grade || '年级未填' }}</span>
+              </div>
+              <b :data-status="row.status">{{ statusLabels[row.status] }}</b>
+            </header>
+            <p>
+              已提交 {{ row.submittedSubtasks }} / {{ row.totalSubtasks }}
+              <span v-if="row.overdue" class="overdue">已逾期</span>
+              <span v-if="row.awardedPoints != null">· 已计 {{ row.awardedPoints }} 分</span>
+              <span v-else-if="row.pointsSkippedReason" class="task-skip">· 未计分：{{ row.pointsSkippedReason }}</span>
             </p>
-            <p v-if="review.decision === 'REJECTED'" class="task-skip">驳回必须填写审核意见，且不会发放积分。</p>
-            <div class="task-form-actions">
-              <button
-                class="portal-primary"
-                type="submit"
-                :disabled="working || (review.decision === 'REJECTED' && !review.comment)"
-              >
-                {{ working ? '提交中…' : '提交审核结果' }}
-              </button>
-              <button type="button" class="portal-secondary" @click="activeAssignmentId = ''">取消</button>
-            </div>
-          </form>
+            <p v-if="row.completionNote" class="task-row-note">完成说明：{{ row.completionNote }}</p>
+            <p v-if="row.reviewComment" class="task-row-note">
+              审核意见：{{ row.reviewComment }}（{{ row.reviewedBy }}，{{ row.reviewedAt?.slice(0, 10) }}）
+            </p>
 
-          <SubtaskSubmissionsPanel
-            v-if="submissionsAssignmentId === row.assignmentId"
-            :task-id="task.id"
-            :assignment-id="row.assignmentId"
-          />
-        </article>
+            <div class="task-card-actions">
+              <button
+                v-if="row.status === 'SUBMITTED'"
+                type="button"
+                :disabled="working || task.status === 'CLOSED'"
+                :title="task.status === 'CLOSED' ? '任务已由管理员结束，不能再审核或驳回' : ''"
+                @click="openReview(row.assignmentId)"
+              >
+                <CheckCheck :size="15" aria-hidden="true" />人工审核
+              </button>
+              <button
+                type="button"
+                :aria-expanded="submissionsAssignmentId === row.assignmentId"
+                @click="toggleSubmissions(row.assignmentId)"
+              >
+                <ListChecks :size="15" aria-hidden="true" />查看提交内容
+              </button>
+              <button
+                v-if="task.status === 'PUBLISHED' && row.status === 'PENDING'"
+                type="button"
+                class="danger"
+                :disabled="working"
+                @click="removeAssignment(row)"
+              >
+                <X :size="15" aria-hidden="true" />移除对象
+              </button>
+            </div>
+
+            <Transition name="reveal">
+              <form
+                v-if="activeAssignmentId === row.assignmentId"
+                class="task-review-form"
+                @submit.prevent="submitReview"
+              >
+                <label
+                  >审核结论<select v-model="review.decision">
+                    <option value="APPROVED">通过并发放积分</option>
+                    <option value="REJECTED">驳回（不发分）</option>
+                  </select></label
+                >
+                <label class="full">审核意见<input v-model.trim="review.comment" maxlength="1000" /></label>
+                <p v-if="review.decision === 'APPROVED'" class="task-skip full">
+                  通过只记录结论；积分在任务到期后统一结算，凭证使用任务详情站内路径。
+                </p>
+                <p v-if="review.decision === 'REJECTED'" class="task-skip">驳回必须填写审核意见，且不会发放积分。</p>
+                <div class="task-form-actions">
+                  <button
+                    class="portal-primary"
+                    type="submit"
+                    :disabled="working || (review.decision === 'REJECTED' && !review.comment)"
+                  >
+                    {{ working ? '提交中…' : '提交审核结果' }}
+                  </button>
+                  <button type="button" class="portal-secondary" @click="activeAssignmentId = ''">取消</button>
+                </div>
+              </form>
+            </Transition>
+
+            <Transition name="reveal">
+              <SubtaskSubmissionsPanel
+                v-if="submissionsAssignmentId === row.assignmentId"
+                :task-id="task.id"
+                :assignment-id="row.assignmentId"
+              />
+            </Transition>
+          </article>
+        </TransitionGroup>
+        <p v-if="progress.assignments.length && !visibleRows.length" class="empty-note">该状态下没有成员。</p>
       </section>
     </template>
   </PortalShell>
