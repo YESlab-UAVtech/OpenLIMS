@@ -1783,3 +1783,10 @@
 - 本轮重新执行 `npm run check`，ESLint、Prettier、Vite 构建全部通过，仅既有 Three.js 大型分块提示；Java 21 下完整后端测试 115 项通过，0 失败、0 错误、0 跳过。日志保存在被 Git 忽略的 `.codex-run/github-publish-frontend.log` 与 `github-publish-backend.log`。
 - `git diff --check` 通过；本次前端改版不涉及后端代码、数据库迁移、依赖锁文件或 CI 工作流。现有“死板、重复”诊断仍为待选择建议，没有作为已实现功能写入 PR 描述。
 - 当前 Mac 缺少可用的 GitHub HTTPS 凭证，推送 dry-run 返回 `unable to get password from user`；已准备 PR 说明及官方 GitHub CLI 登录流程，等待用户在 GitHub 官方页面完成授权。尚未连接生产或发布镜像，本地开发服务继续保留。
+
+## 2026-10-07：前端改版已推送 GitHub 并创建 PR
+
+- 用户完成 GitHub 官方设备授权，`gh auth status` 确认登录成功，凭证保存在系统钥匙串；已将 `feat/ui-refresh` 推送到 `YESlab-UAVtech/OpenLIMS` 并设置上游分支。
+- 已创建 [PR #1：统一前端配色与动效，改善后台编辑互动](https://github.com/YESlab-UAVtech/OpenLIMS/pull/1)，目标分支为 `main`；本轮未合并，也未触发 `main` 的镜像发布。
+- 验证沿用本次上传前刚完成的前端完整检查与后端 115 项测试，全部通过；本次续传只补充上传记录，没有更改业务代码。另一个进行中的设计讨论留下的未提交记录保留在工作区，没有包含在此次补充提交中。
+- 待办：在 PR 中审阅并合并本次改版；GitHub Actions 的最新结果以 PR 检查状态为准。未启动临时 MySQL，本地开发服务继续保留。
