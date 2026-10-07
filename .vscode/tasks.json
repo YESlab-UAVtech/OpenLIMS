@@ -19,7 +19,7 @@
     {
       "label": "OpenLIMS: 启动前端",
       "type": "shell",
-      "command": "npm run dev -- --host 127.0.0.1",
+      "command": "npm ci && npm run dev -- --host 127.0.0.1",
       "options": {
         "cwd": "${workspaceFolder}"
       },
