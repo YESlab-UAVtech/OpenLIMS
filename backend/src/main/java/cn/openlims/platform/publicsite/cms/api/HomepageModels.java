@@ -305,7 +305,7 @@ public final class HomepageModels {
                                 new ResearchDirectionItem("交叉探索", "#projects"),
                                 new ResearchDirectionItem("应用实践", "#projects")
                         ),
-                        LabBrand.NAME + " · RESEARCH & COLLABORATION", "让每一次探索\n汇聚成", "新的可能", "浏览研究项目", "了解合作伙伴",
+                        LabBrand.NAME + " · 研究与协作", "让每一次探索\n汇聚成", "新的可能", "浏览研究项目", "了解合作伙伴",
                         "#projects", true, "#partners", true
                 ),
                 new PageSections(
@@ -323,13 +323,13 @@ public final class HomepageModels {
                         new SectionCopy("04 / PARTNERS", "赞助与合作伙伴", "连接研究伙伴，共同支持科研实践与人才培养。"),
                         new SectionCopy("05 / ACHIEVEMENTS", "成果与外部报道", "新闻按发布日期自动排序"),
                         new ContactSection("06 / CONNECT", "下一次探索，\n从这里开始。", "关注我们的研究、比赛和开源进展。"),
-                        "© " + java.time.Year.now() + " " + LabBrand.NAME + " · RESEARCH & COLLABORATION"
+                        "© " + java.time.Year.now() + " " + LabBrand.NAME + " · 开放实验室平台"
                 ),
                 List.of(
-                        new ProofItem("01 / AWARDS", "竞赛成果", "全国 / 省赛 / 赛区", ProofMetric.AWARDS, "#updates"),
-                        new ProofItem("02 / FOCUS", "3 个方向", "持续探索", ProofMetric.DIRECTIONS, "#projects"),
-                        new ProofItem("03 / PARTNER", "合作伙伴", "共同探索", ProofMetric.PARTNERS, "#partners"),
-                        new ProofItem("04 / STATUS", "持续建设", "开放、实践、成长", ProofMetric.PROJECT_STATUS, "#projects")
+                        new ProofItem("获奖", "竞赛成果", "全国 / 省赛 / 赛区", ProofMetric.AWARDS, "#updates"),
+                        new ProofItem("研究方向", "3 个方向", "持续探索", ProofMetric.DIRECTIONS, "#projects"),
+                        new ProofItem("合作伙伴", "合作伙伴", "共同探索", ProofMetric.PARTNERS, "#partners"),
+                        new ProofItem("项目状态", "持续建设", "开放、实践、成长", ProofMetric.PROJECT_STATUS, "#projects")
                 ),
                 List.of(),
                 List.of(),

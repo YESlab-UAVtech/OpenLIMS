@@ -2,6 +2,8 @@
 import { ArrowLeft, CalendarClock, CheckCheck, ListChecks, RefreshCw, Save, X } from '@lucide/vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import PortalShell from '../components/PortalShell.vue'
+import LoadingSkeleton from '../components/LoadingSkeleton.vue'
+import { useToastFeedback } from '../composables/useToastFeedback'
 import DiscussionRichTextEditor from '../components/DiscussionRichTextEditor.vue'
 import TaskSubtaskEditor from '../components/TaskSubtaskEditor.vue'
 import SubtaskSubmissionsPanel from '../components/SubtaskSubmissionsPanel.vue'
@@ -20,6 +22,7 @@ const loading = ref(true)
 const working = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
+useToastFeedback({ success: successMessage, error: errorMessage, keepErrorInline: () => !overview.value })
 const activeAssignmentId = ref('')
 const submissionsAssignmentId = ref('')
 const extendAssignmentId = ref('')
@@ -86,8 +89,10 @@ function progressPercent(row) {
   return Math.round((row.submittedSubtasks / row.totalSubtasks) * 100)
 }
 
+let hasLoaded = false
 async function load() {
-  loading.value = true
+  // Keep current content on screen while refreshing after an action.
+  if (!hasLoaded) loading.value = true
   try {
     const [current, data] = await Promise.all([getOnboardingTask(), getOnboardingOverview()])
     task.taskId = current.taskId
@@ -103,6 +108,7 @@ async function load() {
   } catch (error) {
     errorMessage.value = error.message
   } finally {
+    hasLoaded = true
     loading.value = false
   }
 }
@@ -232,13 +238,12 @@ async function submitReview(row) {
 </script>
 
 <template>
-  <PortalShell eyebrow="ADMIN / ONBOARDING TASK" title="新手任务" description="维护共享子任务，并审核技能测试结果。">
+  <PortalShell title="新手任务" description="维护共享子任务，并审核技能测试结果。">
     <RouterLink class="task-back" to="/admin/tasks"><ArrowLeft :size="16" aria-hidden="true" />返回任务管理</RouterLink>
 
     <p v-if="errorMessage" class="portal-state error" role="alert">{{ errorMessage }}</p>
-    <p v-if="successMessage" class="portal-state success" role="status">{{ successMessage }}</p>
 
-    <div v-if="loading" class="portal-state">正在读取新手任务…</div>
+    <LoadingSkeleton v-if="loading" variant="detail" :rows="3" label="正在读取新手任务" />
 
     <template v-else>
       <details class="admin-form-card onboarding-settings">

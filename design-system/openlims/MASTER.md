@@ -36,7 +36,7 @@
 | On Destructive   | `#FFFFFF` | `--color-on-destructive`   |
 | Ring             | `#1E3A5F` | `--color-ring`             |
 
-**Color Notes:** Default general preset uses blue-gray; other presets share semantic tokens.
+**Color Notes:** Default general preset uses blue-gray; other presets share semantic tokens. 自 2026-10-07 起，`src/styles/tokens.css` 是颜色、阴影、圆角、动效与层级的唯一来源：预设只覆盖品牌锚点（primary、secondary、accent、background、surface-soft、ring 等），中性色阶、悬停/按下态、状态浅底与反色（墨色）面板全部用 `color-mix()` 从锚点派生。组件只使用语义变量；`--admin-*`、`--lab-*` 仅作为指向语义变量的兼容别名。
 
 ### Typography
 
@@ -174,6 +174,20 @@ _Density: 5/10 — Standard_
 ## Motion
 
 保留有效的轮播暂停、聚焦/悬停、减少动态与页面隐藏规则；反馈 150–300ms，非必要入场减少动态时跳过，不要求 GSAP 或跳跃动画。
+
+- 时长与曲线只用 `tokens.css` 变量：`--duration-instant 90ms` / `fast 140ms` / `base 200ms` / `slow 280ms` / `slower 420ms`；`--ease-out`、`--ease-in`、`--ease-in-out`、`--ease-spring`。减少动态时时长变量统一降为 1ms。
+- 只对 `transform` 与 `opacity` 做过渡（侧栏收起这类用户主动、低频的布局切换除外）；不要 `transition: all`。
+- 共享过渡类见 `src/styles/motion.css`：`page`（顶层页面，仅透明度，避免固定头部位移）、`route`（后台内容区）、`rise`、`reveal`、`list`（含 move）、`pop`、`fade`；新增列表或展开区优先复用，不再新建同义过渡名。
+- 刚创建/更新的行用 `.ui-flash` 高亮一次。
+
+## 交互组件（2026-10-07）
+
+- 确认：`confirmAction()`（`src/services/confirm.js` + `ConfirmDialog`），禁止 `window.confirm`；危险操作 `tone: 'danger'`，默认焦点落在取消；标题说明动作，正文写后果，`details` 列出不可撤销等要点。
+- 操作结果：`toast.success/error/info`（`ToastHost`）；成功 4.2 秒自动消失，错误需手动关闭；字段级校验错误仍就地显示。后台不再使用 `SubmissionFeedbackModal` 打断流程，成员端庆祝型反馈保留。
+- 未保存保护：`useUnsavedGuard(dirty)` 覆盖离开路由、关闭页面和页内切换（`confirmDiscard()`）。
+- 后台长表单：`AdminDrawer` 右侧抽屉（`md` 560px / `lg` 780px，手机全屏），抽屉渲染在后台外壳内的 `#admin-layer`，保留后台表单样式；非抽屉长表单用 `SaveBar` 吸底保存条。
+- 后台外壳：`/admin/*` 嵌套在 `AdminLayout` 下持久渲染，侧栏可收起为图标栏，顶栏显示「模块 › 子页面」；页面通过 `PortalShell` 的 `#actions` 插槽把主操作放在标题行右侧。
+- 列表筛选：带计数的 `.admin-chip-filters`；视图切换：`.admin-view-tabs`；加载：`LoadingSkeleton`。
 
 ## Anti-Patterns (Do NOT Use)
 

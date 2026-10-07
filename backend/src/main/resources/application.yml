@@ -58,6 +58,8 @@ openlims:
       teacher-password: ${OPENLIMS_BOOTSTRAP_TEACHER_PASSWORD:OpenLIMS-Teacher-2026!}
       core-password: ${OPENLIMS_BOOTSTRAP_CORE_PASSWORD:OpenLIMS-Core-2026!}
       member-password: ${OPENLIMS_BOOTSTRAP_MEMBER_PASSWORD:OpenLIMS-Member-2026!}
+      # auto: seed example content only into the embedded H2 database (local trials); true/false to force.
+      demo-content: ${OPENLIMS_DEMO_CONTENT:auto}
     initial-admin:
       enabled: ${OPENLIMS_INITIAL_ADMIN_ENABLED:false}
       username: ${OPENLIMS_INITIAL_ADMIN_USERNAME:admin}

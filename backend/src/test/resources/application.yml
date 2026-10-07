@@ -38,3 +38,4 @@ openlims:
       teacher-password: OpenLIMS-Teacher-2026!
       core-password: OpenLIMS-Core-2026!
       member-password: OpenLIMS-Member-2026!
+      demo-content: false

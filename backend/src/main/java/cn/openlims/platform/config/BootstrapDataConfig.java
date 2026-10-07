@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ import java.time.LocalDate;
 import java.util.LinkedHashSet;
 
 @Component
+@Order(100)
 @ConditionalOnProperty(name = "openlims.security.bootstrap.enabled", havingValue = "true")
 public class BootstrapDataConfig implements ApplicationRunner {
 

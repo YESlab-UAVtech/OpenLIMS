@@ -1,5 +1,4 @@
 /**
- * Reserved boundary for the future administration module.
- * No controllers, services, persistence, authentication, or routes are implemented at this stage.
+ * Cross-module administration views (currently the admin overview of pending work).
  */
 package cn.openlims.platform.administration;
