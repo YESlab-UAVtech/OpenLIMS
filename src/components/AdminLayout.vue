@@ -8,6 +8,7 @@ import {
   ClipboardCheck,
   FolderKanban,
   Gift,
+  LayoutDashboard,
   LayoutTemplate,
   ListChecks,
   LogOut,
@@ -17,6 +18,7 @@ import {
   Newspaper,
   PanelLeftClose,
   PanelLeftOpen,
+  Search,
   ShieldCheck,
   UserRound,
   UsersRound,
@@ -26,11 +28,13 @@ import { computed, provide, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { authState, logout } from '../services/authApi'
 import { notifyRouteLeft } from '../services/routeTransition'
+import { commandShortcutLabel, openCommandPalette } from '../services/commandPalette'
 
 const router = useRouter()
 const route = useRoute()
 
 const modules = [
+  { to: '/admin', label: '待处理总览', icon: LayoutDashboard, exact: true },
   { to: '/admin/members', label: '成员管理', icon: UsersRound },
   { to: '/admin/points', label: '积分管理', icon: BadgePlus },
   { to: '/admin/recruitment', label: '招新管理', icon: ShieldCheck },
@@ -56,7 +60,7 @@ const page = reactive({ title: '' })
 provide('adminLayout', page)
 
 const currentModule = computed(() =>
-  modules.find((item) => route.path === item.to || route.path.startsWith(`${item.to}/`)),
+  modules.find((item) => route.path === item.to || (!item.exact && route.path.startsWith(`${item.to}/`))),
 )
 const pageTitle = computed(() => page.title || currentModule.value?.label || '管理工作台')
 const accountName = computed(() => authState.account?.displayName || authState.account?.username || '')
@@ -195,6 +199,15 @@ async function signOut() {
         </nav>
       </div>
       <div class="admin-shell-actions flex items-center">
+        <button
+          class="portal-search-trigger"
+          type="button"
+          aria-label="搜索与跳转"
+          aria-keyshortcuts="Meta+K Control+K"
+          @click="openCommandPalette"
+        >
+          <Search :size="16" aria-hidden="true" /><span>搜索</span><kbd>{{ commandShortcutLabel }}</kbd>
+        </button>
         <ThemeToggle />
         <NotificationCenter v-if="authState.account" />
         <RouterLink class="admin-shell-top-avatar" to="/profile" aria-label="打开个人主页">

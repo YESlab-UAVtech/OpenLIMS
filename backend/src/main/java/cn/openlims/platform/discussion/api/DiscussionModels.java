@@ -63,6 +63,16 @@ public final class DiscussionModels {
             List<ReplyView> replies
     ) { }
 
+    /** One page of the board; pinned posts are always returned in full so they stay on top. */
+    public record PostPage(
+            List<PostView> items,
+            List<PostView> pinned,
+            long totalCount,
+            int page,
+            int size,
+            boolean hasMore
+    ) { }
+
     public record ContributionView(
             long contentNumber,
             String type,

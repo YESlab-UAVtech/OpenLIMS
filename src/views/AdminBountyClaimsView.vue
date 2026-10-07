@@ -59,8 +59,10 @@ const filteredRows = computed(() => {
   })
 })
 
+let hasLoaded = false
 async function load() {
-  loading.value = true
+  // Keep current content on screen while refreshing after an action.
+  if (!hasLoaded) loading.value = true
   try {
     claims.value = await getBountyClaims(route.params.taskId)
     return true
@@ -68,6 +70,7 @@ async function load() {
     errorMessage.value = error.message
     return false
   } finally {
+    hasLoaded = true
     loading.value = false
   }
 }
@@ -173,7 +176,7 @@ function prizeSummary() {
 </script>
 
 <template>
-  <PortalShell eyebrow="ADMIN / BOUNTY CLAIMS" title="悬赏接取名单" description="查看接取、完成与奖金履约记录。">
+  <PortalShell title="悬赏接取名单" description="查看接取、完成与奖金履约记录。">
     <RouterLink class="task-back" to="/admin/bounties"
       ><ArrowLeft :size="16" aria-hidden="true" />返回悬赏管理</RouterLink
     >

@@ -1,4 +1,9 @@
 <script setup>
+import { useDraft } from '../composables/useDraft'
+import { useUnsavedGuard } from '../composables/useUnsavedGuard'
+import LoadingSkeleton from '../components/LoadingSkeleton.vue'
+import { celebrate } from '../services/celebrate'
+import { toast } from '../services/toast'
 import {
   CalendarDays,
   Check,
@@ -30,7 +35,6 @@ import {
   saveOwnQualification,
   uploadRecruitmentPortfolioImages,
 } from '../services/authApi'
-import { showSubmissionFeedback } from '../services/submissionFeedback'
 import { confirmAction } from '../services/confirm'
 
 const stages = ['SIGNUP', 'SCREENING', 'INTERVIEW', 'SKILL_TEST', 'FORMAL_MEMBER']
@@ -79,6 +83,16 @@ const form = reactive({
   mediaLinks: [],
   technicalAnswers: {},
 })
+const pristine = ref('')
+const formDirty = computed(
+  () =>
+    !loading.value &&
+    editable.value &&
+    pristine.value !== '' &&
+    (JSON.stringify(form) !== pristine.value || selectedImages.value.length > 0),
+)
+const draft = useDraft('recruitment-application', () => JSON.parse(JSON.stringify(form)))
+useUnsavedGuard(formDirty)
 const legacyDirections = computed(() => form.interestDirections.filter((value) => !directions.includes(value)))
 const editable = computed(() => !application.value || application.value.stage === 'SIGNUP')
 const currentStageIndex = computed(() => stages.indexOf(application.value?.stage || 'SIGNUP'))
@@ -136,7 +150,7 @@ async function saveQualification() {
       .filter(Boolean)
     application.value = await saveOwnQualification({ memberCode: qualification.memberCode.trim(), skillTags })
     fillQualification(application.value)
-    qualificationMessage.value = '转正资料已保存。'
+    toast.success('转正资料已保存。')
   } catch (error) {
     qualificationError.value = error.message
   } finally {
@@ -157,6 +171,8 @@ onMounted(async () => {
       if (username.includes('@')) form.email = username
       else if (/^\+?\d+$/.test(username)) form.phone = username
     }
+    pristine.value = JSON.stringify(form)
+    if (!ownApplication || ownApplication.stage === 'SIGNUP') draft.restore((value) => Object.assign(form, value))
     if (ownApplication?.stage === 'INTERVIEW') {
       await refreshInterviewSchedule()
       interviewPollTimer = window.setInterval(refreshInterviewSchedule, 10000)
@@ -198,7 +214,7 @@ async function bookInterview(sessionId) {
   successMessage.value = ''
   try {
     interviewSchedule.value = await bookInterviewSession(sessionId)
-    successMessage.value = '面试预约成功，你的面试号已经生成。'
+    toast.success('面试预约成功，你的面试号已经生成。')
   } catch (error) {
     errorMessage.value = error.message
   } finally {
@@ -222,7 +238,7 @@ async function cancelInterview() {
   successMessage.value = ''
   try {
     interviewSchedule.value = await cancelInterviewBooking()
-    successMessage.value = '面试预约已取消。'
+    toast.success('面试预约已取消。')
   } catch (error) {
     errorMessage.value = error.message
   } finally {
@@ -276,14 +292,15 @@ async function submit() {
       clearSelectedImages()
     }
     fillForm(application.value)
-    showSubmissionFeedback({
-      eyebrow: wasSubmitted ? 'APPLICATION UPDATED' : 'APPLICATION SUBMITTED',
-      title: wasSubmitted ? '报名修改已保存' : '报名表已提交',
-      message: wasSubmitted
-        ? '报名资料、个人展示和技术认知回答已经更新。进入初筛前仍可继续修改。'
-        : '报名资料、个人展示和技术认知回答已经保存。你可以在本页查看进度，进入初筛前仍可修改。',
-      confirmLabel: '查看报名进度',
-    })
+    pristine.value = JSON.stringify(form)
+    draft.clear()
+    if (wasSubmitted)
+      toast.success('报名资料、个人展示和技术认知回答已经更新。进入初筛前仍可继续修改。', { title: '报名修改已保存' })
+    else
+      celebrate({
+        title: '报名表已提交',
+        message: '你可以在本页查看进度，进入初筛前仍可修改。',
+      })
   } catch (error) {
     errorMessage.value = error.message
   } finally {
@@ -352,7 +369,7 @@ async function deleteExistingImage(imageId) {
   successMessage.value = ''
   try {
     application.value = await deleteRecruitmentPortfolioImage(imageId)
-    successMessage.value = '作品图片已删除。'
+    toast.success('作品图片已删除。')
   } catch (error) {
     errorMessage.value = error.message
   }
@@ -360,17 +377,12 @@ async function deleteExistingImage(imageId) {
 </script>
 
 <template>
-  <PortalShell
-    eyebrow="RECRUITMENT / APPLICANT"
-    title="我的报名"
-    description="用简洁的信息、真实作品和技术思考介绍自己。"
-  >
-    <div v-if="loading" class="portal-state">正在读取报名进度…</div>
+  <PortalShell title="我的报名" description="用简洁的信息、真实作品和技术思考介绍自己。">
+    <LoadingSkeleton v-if="loading" variant="detail" :rows="3" label="正在读取报名进度" />
     <template v-else>
       <section class="recruitment-progress-card">
         <header>
           <div>
-            <p>CURRENT STAGE</p>
             <h2>{{ stageLabels[application?.stage || 'SIGNUP'] }}</h2>
           </div>
           <span v-if="application">最后更新 {{ new Date(application.updatedAt).toLocaleString('zh-CN') }}</span
@@ -401,7 +413,6 @@ async function deleteExistingImage(imageId) {
       <section v-if="application?.stage === 'INTERVIEW'" class="interview-booking-card">
         <header>
           <div>
-            <p>INTERVIEW APPOINTMENT</p>
             <h2>面试预约</h2>
           </div>
           <span>面试开始前 1 小时停止预约</span>
@@ -483,7 +494,6 @@ async function deleteExistingImage(imageId) {
       >
         <header>
           <div>
-            <p>MEMBER INFORMATION</p>
             <h2 id="qualification-title">转正资料</h2>
           </div>
           <span>由本人填写</span>
@@ -535,7 +545,6 @@ async function deleteExistingImage(imageId) {
         <section class="application-card">
           <header>
             <div>
-              <p>APPLICATION FORM</p>
               <h2>报名表</h2>
             </div>
             <span>{{ editable ? '初筛前可修改' : '当前阶段已锁定' }}</span>
@@ -725,7 +734,6 @@ async function deleteExistingImage(imageId) {
 
         <aside class="application-history">
           <header>
-            <p>STATUS HISTORY</p>
             <h2>流程记录</h2>
           </header>
           <ol v-if="application?.history?.length">

@@ -14,6 +14,12 @@ const routes = [
   { path: '/login', name: 'login', component: () => import('../views/AuthView.vue'), meta: { guest: true } },
   { path: '/register', name: 'register', component: () => import('../views/AuthView.vue'), meta: { guest: true } },
   {
+    path: '/today',
+    name: 'today',
+    component: () => import('../views/TodayView.vue'),
+    meta: { roles: ['TEACHER', 'CORE_STUDENT', 'MEMBER'] },
+  },
+  {
     path: '/profile',
     name: 'profile',
     component: () => import('../views/ProfileView.vue'),
@@ -134,7 +140,7 @@ const routes = [
     component: () => import('../components/AdminLayout.vue'),
     meta: { roles: ['TEACHER', 'CORE_STUDENT'] },
     children: [
-      { path: '', redirect: '/admin/members' },
+      { path: '', name: 'admin-overview', component: () => import('../views/AdminOverviewView.vue') },
       { path: 'members', name: 'admin-members', component: () => import('../views/AdminMembersView.vue') },
       { path: 'points', name: 'admin-points', component: () => import('../views/AdminPointsView.vue') },
       { path: 'recruitment', name: 'admin-recruitment', component: () => import('../views/AdminRecruitmentView.vue') },
@@ -180,9 +186,9 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   await restoreSession()
   const role = authState.account?.role
-  if (to.meta.guest && authState.account) return role === 'VISITOR' ? '/application' : '/profile'
+  if (to.meta.guest && authState.account) return role === 'VISITOR' ? '/application' : '/today'
   if (to.meta.roles && !authState.account) return { path: '/login', query: { redirect: to.fullPath } }
-  if (to.meta.roles && !to.meta.roles.includes(role)) return role === 'VISITOR' ? '/application' : '/profile'
+  if (to.meta.roles && !to.meta.roles.includes(role)) return role === 'VISITOR' ? '/application' : '/today'
 
   if (role === 'MEMBER' && to.meta.roles?.includes('MEMBER')) {
     if (authState.memberQualificationComplete !== true && to.name !== 'complete-profile') {
@@ -196,7 +202,7 @@ router.beforeEach(async (to) => {
       }
     }
     if (to.name === 'complete-profile' && authState.memberQualificationComplete === true) {
-      return safeMemberRedirect(to.query.redirect) || '/profile'
+      return safeMemberRedirect(to.query.redirect) || '/today'
     }
   }
   return true

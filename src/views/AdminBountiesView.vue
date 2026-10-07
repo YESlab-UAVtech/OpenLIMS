@@ -190,13 +190,16 @@ function onHeadcountModeChange() {
   errorMessage.value = summaryOf(rest)
 }
 
+let hasLoaded = false
 async function load() {
-  loading.value = true
+  // Keep current content on screen while refreshing after an action.
+  if (!hasLoaded) loading.value = true
   try {
     bounties.value = await listBounties()
   } catch (error) {
     toast.error(error.message, { title: '悬赏列表读取失败' })
   } finally {
+    hasLoaded = true
     loading.value = false
   }
 }
@@ -410,7 +413,7 @@ function loadSubtaskContent(subtaskId) {
 </script>
 
 <template>
-  <PortalShell eyebrow="ADMIN / BOUNTY" title="悬赏管理" description="创建悬赏，管理接取、完成与奖金发放。">
+  <PortalShell title="悬赏管理" description="创建悬赏，管理接取、完成与奖金发放。">
     <template #actions>
       <button class="ui-btn ui-btn--primary" type="button" @click="openCreate">
         <Plus :size="17" aria-hidden="true" />创建悬赏
@@ -420,7 +423,6 @@ function loadSubtaskContent(subtaskId) {
 
     <AdminDrawer
       v-model:open="showForm"
-      :eyebrow="editingId ? 'EDIT BOUNTY' : 'NEW BOUNTY'"
       :title="editingId ? '编辑悬赏' : '创建悬赏'"
       :description="editingId ? form.title : '保存为草稿，确认无误后再发布。'"
       size="lg"

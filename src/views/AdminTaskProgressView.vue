@@ -54,9 +54,12 @@ const visibleRows = computed(() =>
 )
 useToastFeedback({ success: successMessage, error: errorMessage, keepErrorInline: () => !task.value })
 
+let hasLoaded = false
 async function load() {
   refreshing.value = true
-  if (!progress.value) loading.value = true
+  if (!progress.value)
+    // Keep current content on screen while refreshing after an action.
+    if (!hasLoaded) loading.value = true
   errorMessage.value = ''
   refreshFailed.value = false
   try {
@@ -65,6 +68,7 @@ async function load() {
     errorMessage.value = error.message
     refreshFailed.value = true
   } finally {
+    hasLoaded = true
     loading.value = false
     refreshing.value = false
   }
@@ -132,7 +136,6 @@ async function removeAssignment(row) {
 
 <template>
   <PortalShell
-    eyebrow="ADMIN / TASK PROGRESS"
     title="任务完成情况"
     description="任务汇总、子任务提交率与逐人明细；审核只记录结论，积分在任务到期后由系统统一结算。"
   >

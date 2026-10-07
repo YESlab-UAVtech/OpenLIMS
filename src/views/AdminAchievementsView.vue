@@ -194,11 +194,7 @@ async function saveNews() {
 </script>
 
 <template>
-  <PortalShell
-    eyebrow="ADMIN / ACHIEVEMENTS"
-    title="成果管理"
-    description="审核比赛证书、维护首页比赛排序，并管理引用自学校官网或公众号的相关新闻。"
-  >
+  <PortalShell title="成果管理" description="审核比赛证书、维护首页比赛排序，并管理引用自学校官网或公众号的相关新闻。">
     <div class="achievement-admin-tabs">
       <button :class="{ active: tab === 'competitions' }" type="button" @click="tab = 'competitions'">
         <Trophy :size="17" aria-hidden="true" />比赛审核 <b>{{ pendingCount }}</b></button
@@ -216,7 +212,6 @@ async function saveNews() {
       <aside class="achievement-admin-list">
         <header>
           <div>
-            <p>COMPETITION QUEUE</p>
             <h2>比赛记录</h2>
           </div>
           <span>{{ competitions.length }}</span>
@@ -342,7 +337,6 @@ async function saveNews() {
       <section class="news-admin-list">
         <header>
           <div>
-            <p>PUBLISHED SOURCES</p>
             <h2>新闻列表</h2>
           </div>
           <button type="button" class="ui-btn ui-btn--primary" @click="createNewsEntry">
@@ -370,7 +364,6 @@ async function saveNews() {
 
     <AdminDrawer
       v-model:open="newsOpen"
-      eyebrow="EXTERNAL COVERAGE"
       :title="newsEditingId ? '编辑新闻引用' : '新增新闻引用'"
       description="引用学校官网或公众号报道，只摘要不复制全文。"
       :dirty="newsDirty"

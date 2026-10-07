@@ -127,13 +127,16 @@ async function report(error) {
   errorBox.value?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   errorBox.value?.focus({ preventScroll: true })
 }
+let hasLoaded = false
 async function loadTasks() {
-  loading.value = true
+  // Keep current content on screen while refreshing after an action.
+  if (!hasLoaded) loading.value = true
   try {
     tasks.value = await listTasks()
   } catch (error) {
     await report(error)
   } finally {
+    hasLoaded = true
     loading.value = false
   }
 }
@@ -361,7 +364,7 @@ const fieldTargets = {
 </script>
 
 <template>
-  <PortalShell eyebrow="ADMIN / TASKS" title="任务管理" description="发布任务、查看进度与处理审核。">
+  <PortalShell title="任务管理" description="发布任务、查看进度与处理审核。">
     <div class="tm">
       <nav class="tm-modules" aria-label="任务模块">
         <RouterLink to="/admin/tasks" aria-current="page">普通任务</RouterLink>
@@ -492,7 +495,6 @@ const fieldTargets = {
 
     <AdminDrawer
       v-model:open="showForm"
-      :eyebrow="editing ? `TASK / ${published ? '已发布' : '草稿'}` : 'TASK / NEW'"
       :title="editing ? '编辑任务' : '新建任务'"
       :description="editing ? editing.title : '保存为草稿后，预览发放名单即可发布。'"
       size="lg"

@@ -328,7 +328,6 @@ function formatTime(value) {
 
 <template>
   <PortalShell
-    eyebrow="ADMIN / PUBLIC HOMEPAGE"
     title="主页编辑"
     description="统一维护公开展示页内容；成员、项目、比赛和新闻的详细数据继续由对应业务模块管理。"
   >
@@ -342,7 +341,6 @@ function formatTime(value) {
     <form v-else-if="content" class="homepage-editor" @submit.prevent="save">
       <aside class="homepage-editor-nav">
         <header>
-          <p>CONTENT SECTIONS</p>
           <h2>编辑目录</h2>
         </header>
         <button
@@ -367,7 +365,6 @@ function formatTime(value) {
       <main class="homepage-editor-main">
         <section v-show="activeTab === 'identity'" class="homepage-editor-section">
           <header>
-            <p>01 / IDENTITY</p>
             <h2>品牌与首屏</h2>
             <span>名称由 config/branding.json 统一配置；在此维护首屏标题、简介和研究方向。</span>
           </header>
@@ -468,7 +465,6 @@ function formatTime(value) {
 
         <section v-show="activeTab === 'models'" class="homepage-editor-section">
           <header>
-            <p>3D / MODEL CAROUSEL</p>
             <h2>首屏 3D 模型轮播</h2>
             <span>每个轮播项使用一个 GLB 2.0 模型；公开首页会按下方顺序自动切换。</span>
           </header>
@@ -554,7 +550,6 @@ function formatTime(value) {
 
         <section v-show="activeTab === 'sections'" class="homepage-editor-section">
           <header>
-            <p>02 / SECTION COPY</p>
             <h2>栏目文案</h2>
             <span>栏目顺序由页面设计固定，所有展示标题和说明可在此修改。</span>
           </header>
@@ -719,7 +714,6 @@ function formatTime(value) {
 
         <section v-show="activeTab === 'display'" class="homepage-editor-section">
           <header>
-            <p>03 / FEATURED CONTENT</p>
             <h2>展示选择</h2>
             <span>控制首页栏目、子模块和展示数量；业务资料仍在成员、项目和成果管理中维护。</span>
           </header>
@@ -988,7 +982,6 @@ function formatTime(value) {
 
         <section v-show="activeTab === 'proof'" class="homepage-editor-section">
           <header>
-            <p>04 / PROOF & COMPETITIONS</p>
             <h2>概览与备用比赛成果</h2>
             <span>维护首屏下方概览条；比赛列表只在成果管理中暂无公开比赛时作为备用内容，不再与首页第二栏重复。</span>
           </header>
@@ -1110,7 +1103,6 @@ function formatTime(value) {
 
         <section v-show="activeTab === 'updates'" class="homepage-editor-section">
           <header>
-            <p>05 / FALLBACK UPDATES</p>
             <h2>首页动态</h2>
             <span>当新闻模块暂无公开新闻时显示这些动态；新闻内容仍在成果管理维护。</span>
           </header>
@@ -1152,7 +1144,6 @@ function formatTime(value) {
 
         <section v-show="activeTab === 'sponsors'" class="homepage-editor-section">
           <header>
-            <p>06 / PARTNERS</p>
             <h2>赞助伙伴</h2>
             <span>上传企业 Logo，编辑简介、合作说明、官网和展示顺序。</span>
           </header>
@@ -1236,7 +1227,6 @@ function formatTime(value) {
 
         <section v-show="activeTab === 'links'" class="homepage-editor-section">
           <header>
-            <p>07 / EXTERNAL LINKS</p>
             <h2>外部入口</h2>
             <span>管理首页底部的开源仓库、公众号、视频平台等入口。</span>
           </header>

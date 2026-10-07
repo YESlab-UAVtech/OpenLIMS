@@ -371,11 +371,7 @@ function splitTags(value) {
 </script>
 
 <template>
-  <PortalShell
-    eyebrow="ADMIN / MEMBERS"
-    title="成员管理"
-    description="维护成员身份、状态和规范字段；个人主页正文仍由成员本人编辑。"
-  >
+  <PortalShell title="成员管理" description="维护成员身份、状态和规范字段；个人主页正文仍由成员本人编辑。">
     <template #actions>
       <button
         v-if="authState.account?.role === 'TEACHER'"
@@ -400,7 +396,6 @@ function splitTags(value) {
       <aside class="member-admin-list">
         <header>
           <div>
-            <p>MEMBER DIRECTORY</p>
             <h2>全部成员</h2>
           </div>
           <span class="admin-count" aria-live="polite"
@@ -618,7 +613,6 @@ function splitTags(value) {
 
     <AdminDrawer
       v-model:open="createOpen"
-      eyebrow="ACCOUNT / CORE STUDENT"
       title="新增学生管理员"
       description="创建后立即拥有与教师相同的系统管理权限。"
       size="lg"
@@ -704,7 +698,6 @@ function splitTags(value) {
     <AdminDrawer
       v-if="authState.account?.role === 'TEACHER'"
       v-model:open="mascotOpen"
-      eyebrow="COMPANION / SETTINGS"
       title="吉祥物与展示设置"
       description="仅指导老师可修改。按账号选择梅琳娜或奶龙，也可以单独设置显示范围。"
       size="lg"

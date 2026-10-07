@@ -473,7 +473,7 @@ onBeforeUnmount(() => {
         <button v-if="failed" type="button" @click="retryModel"><RotateCw :size="14" aria-hidden="true" />重试</button>
       </div>
       <div v-if="activeModel" class="product-scene-caption" aria-live="off">
-        <span v-if="hasMultipleModels">MODEL {{ activeIndex + 1 }} / {{ enabledModels.length }}</span>
+        <span v-if="hasMultipleModels">模型 {{ activeIndex + 1 }} / {{ enabledModels.length }}</span>
         <strong>{{ activeModel.title }}</strong>
         <small>{{ activeModel.description }}</small>
       </div>

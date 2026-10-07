@@ -316,7 +316,6 @@ function localDateString() {
 
 <template>
   <PortalShell
-    eyebrow="ADMIN / POINTS"
     title="积分管理"
     description="关联库内事项发放，系统自动生成积分编号；错误记录通过整批撤销更正，不直接覆盖历史。"
   >
@@ -349,7 +348,6 @@ function localDateString() {
         <section class="points-grant-card" aria-labelledby="points-grant-title">
           <header>
             <div>
-              <p>NEW GRANT</p>
               <h2 id="points-grant-title">新增积分事项</h2>
             </div>
             <BadgePlus :size="24" aria-hidden="true" />
@@ -483,7 +481,6 @@ function localDateString() {
         <section class="points-ledger-card" aria-labelledby="points-ledger-title">
           <header>
             <div>
-              <p>AUDIT LEDGER</p>
               <h2 id="points-ledger-title">最近流水</h2>
             </div>
             <span>{{ grants.length }}</span>

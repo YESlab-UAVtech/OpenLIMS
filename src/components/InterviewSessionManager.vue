@@ -256,7 +256,6 @@ function toLocalInput(value) {
   <section class="interview-manager">
     <header class="interview-manager-head">
       <div>
-        <p>INTERVIEW SESSIONS</p>
         <h2>面试场次与叫号</h2>
         <span>仅线下面试；发布者必须参加，每次叫号 1 人。</span>
       </div>

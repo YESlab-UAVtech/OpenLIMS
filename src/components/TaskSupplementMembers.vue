@@ -110,7 +110,6 @@ async function submit() {
     <header>
       <UserPlus :size="22" aria-hidden="true" />
       <div>
-        <p>SUPPLEMENT</p>
         <h3 id="supplement-title">选择补发成员</h3>
       </div>
     </header>

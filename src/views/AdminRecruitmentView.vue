@@ -86,8 +86,10 @@ const filteredApplications = computed(() =>
 
 onMounted(refresh)
 
+let hasLoaded = false
 async function refresh() {
-  loading.value = true
+  // Keep current content on screen while refreshing after an action.
+  if (!hasLoaded) loading.value = true
   errorMessage.value = ''
   try {
     const [applicationData, interviewerData] = await Promise.all([listRecruitmentApplications(), listInterviewers()])
@@ -99,6 +101,7 @@ async function refresh() {
   } catch (error) {
     errorMessage.value = error.message
   } finally {
+    hasLoaded = true
     loading.value = false
   }
 }
@@ -377,7 +380,6 @@ function splitTags(value) {
 
 <template>
   <PortalShell
-    eyebrow="ADMIN / RECRUITMENT"
     title="招新管理"
     description="教师与核心学生拥有相同的系统管理员权限。所有阶段变化都会记录时间和操作账号。"
   >
@@ -409,7 +411,6 @@ function splitTags(value) {
       <aside class="applicant-list">
         <header>
           <div>
-            <p>APPLICATIONS</p>
             <h2>报名记录</h2>
           </div>
           <span class="admin-count"
@@ -507,7 +508,6 @@ function splitTags(value) {
         >
           <header>
             <div>
-              <p>SCREENING DECISION</p>
               <h3 id="screening-decision-title">选择初筛结果</h3>
             </div>
             <span>提交后将锁定报名表，并立即向报名者发送站内消息。</span>
@@ -683,33 +683,32 @@ function splitTags(value) {
             <span class="application-introduction">{{ selected.selfIntroduction || '未填写自我介绍。' }}</span>
           </article>
           <article>
-            <p>INTEREST</p>
+            <p>兴趣方向</p>
             <div class="detail-tags">
               <span v-for="item in selected.interestDirections" :key="item">{{ item }}</span>
             </div>
           </article>
           <article>
-            <p>EXISTING SKILLS</p>
+            <p>已有技能</p>
             <div class="detail-tags">
               <span v-for="item in selected.existingSkills" :key="item">{{ item }}</span
               ><small v-if="!selected.existingSkills.length">暂无</small>
             </div>
           </article>
           <article>
-            <p>INTENDED TAGS</p>
+            <p>希望发展的方向</p>
             <div class="detail-tags">
               <span v-for="item in selected.intendedTags" :key="item">{{ item }}</span>
             </div>
           </article>
           <article class="full">
-            <p>PROJECT / COMPETITION EXPERIENCE</p>
+            <p>项目或竞赛经历</p>
             <span>{{ selected.experience || '未填写项目或竞赛经历。' }}</span>
           </article>
         </section>
 
         <section class="admin-showcase-review">
           <header>
-            <p>PERSONAL SHOWCASE</p>
             <h3>个人展示</h3>
           </header>
           <p class="application-introduction">{{ selected.portfolioIntroduction || '未填写作品介绍。' }}</p>
@@ -737,7 +736,6 @@ function splitTags(value) {
 
         <section class="admin-showcase-review">
           <header>
-            <p>TECHNICAL AWARENESS</p>
             <h3>技术认知</h3>
             <span>已回答 {{ selected.technicalAnswers?.length || 0 }} / 5</span>
           </header>
@@ -755,7 +753,6 @@ function splitTags(value) {
           <header>
             <ArrowRight :size="22" aria-hidden="true" />
             <div>
-              <p>PROBATION RETIRED</p>
               <h3>试用期已取消</h3>
             </div>
           </header>
@@ -771,7 +768,6 @@ function splitTags(value) {
           <header>
             <UserPlus :size="22" aria-hidden="true" />
             <div>
-              <p>MEMBER CONVERSION</p>
               <h3>转为正式成员</h3>
             </div>
           </header>
@@ -816,7 +812,6 @@ function splitTags(value) {
           <header>
             <KeyRound :size="22" aria-hidden="true" />
             <div>
-              <p>ACCOUNT SECURITY</p>
               <h3 id="applicant-reset-password-title">重置报名账号密码</h3>
             </div>
           </header>
@@ -830,7 +825,6 @@ function splitTags(value) {
 
         <section class="admin-history">
           <header>
-            <p>AUDIT TRAIL</p>
             <h3>状态变更记录</h3>
           </header>
           <ol>

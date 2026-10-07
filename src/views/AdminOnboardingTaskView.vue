@@ -89,8 +89,10 @@ function progressPercent(row) {
   return Math.round((row.submittedSubtasks / row.totalSubtasks) * 100)
 }
 
+let hasLoaded = false
 async function load() {
-  loading.value = true
+  // Keep current content on screen while refreshing after an action.
+  if (!hasLoaded) loading.value = true
   try {
     const [current, data] = await Promise.all([getOnboardingTask(), getOnboardingOverview()])
     task.taskId = current.taskId
@@ -106,6 +108,7 @@ async function load() {
   } catch (error) {
     errorMessage.value = error.message
   } finally {
+    hasLoaded = true
     loading.value = false
   }
 }
@@ -235,7 +238,7 @@ async function submitReview(row) {
 </script>
 
 <template>
-  <PortalShell eyebrow="ADMIN / ONBOARDING TASK" title="新手任务" description="维护共享子任务，并审核技能测试结果。">
+  <PortalShell title="新手任务" description="维护共享子任务，并审核技能测试结果。">
     <RouterLink class="task-back" to="/admin/tasks"><ArrowLeft :size="16" aria-hidden="true" />返回任务管理</RouterLink>
 
     <p v-if="errorMessage" class="portal-state error" role="alert">{{ errorMessage }}</p>
