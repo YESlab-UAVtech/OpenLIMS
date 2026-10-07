@@ -5,7 +5,7 @@ import globals from 'globals'
 
 export default [
   {
-    ignores: ['.codex-run/**', '.openai/**', 'backend/**', 'dist/**', 'node_modules/**', 'public/**'],
+    ignores: ['.codex-run/**', '.openai/**', 'backend/**', 'dist/**', 'node_modules/**', 'promo/**', 'public/**'],
   },
   js.configs.recommended,
   ...vue.configs['flat/recommended'],
