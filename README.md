@@ -74,7 +74,7 @@ Windows 使用 `mvnw.cmd spring-boot:run`。终端二在仓库根目录执行：
 npm run dev -- --host 127.0.0.1
 ```
 
-访问终端显示的地址（通常 `http://localhost:5173`）；健康检查 `http://localhost:8080/actuator/health`。Vite 端口被占用时会换端口，不要把新端口的页面误当成旧进程。VS Code 的一键启动任务目前按 macOS 的 JDK 选择方式配置，其他系统直接用上述两个终端。
+访问终端显示的地址（通常 `http://localhost:5173`）；健康检查 `http://localhost:8080/actuator/health`。`npm run dev` 启动时会打印当前提交号，可据此确认运行的是最新代码；前端固定使用 5173 端口，被占用时会提示并停止、不会自动换端口，请先关闭旧的前端进程再启动。VS Code 的一键启动任务目前按 macOS 的 JDK 选择方式配置，其他系统直接用上述两个终端。
 
 本地首次启动幂等创建演示账号与示例项目：
 
