@@ -1847,3 +1847,9 @@
 - 工作区原已提交且干净，当前 main 提交 c218cc6（修改交互逻辑）包含导航/个人主页/任务整合、模块化报名表第一批及用户既有改动；未重新拆分或覆盖提交。
 - 已成功执行 git push origin main，远端从 a2df1b6 更新至 c218cc6；随后提交本条交接记录。main 推送会触发仓库测试与镜像发布工作流，本次未执行生产部署或数据库升级。
 - 沿用前批完整后端 139 项测试及 UI 验收结论；本次仅推送既有提交，不重复运行业务测试。模块化报名表第二/三批和 V23 的实际 MySQL 演练仍待完成，生产迁移历史与 checksum 未核对前不得升级既有库。
+
+## 2026-10-13：修复推送后的 CI 格式检查失败
+
+- 用户反馈 main 两次 Actions 失败。GitHub API 确认 1335e43 的 test 作业失败于 npm run check，后端测试和 images 作业均跳过；本地复现为 Prettier 报 .vscode/c_cpp_properties.json、.vscode/settings.json 和 DEVLOG.md 三个文件格式错误。
+- 对这三个文件执行 Prettier，仅修正格式，不改变编辑器配置值或业务代码；保留工作流既有检查。此前推送未重跑完整检查，既有编辑器格式问题与新增日志格式问题未被及时处理。
+- 本次完整 npm run check（ESLint、全仓库格式检查、Vite 构建）及 git diff --check 均通过；推送后核对 Actions 的实际结果，远端运行结果以 Actions 记录为准。仍不执行生产部署或 MySQL 升级，报名表后两批及 V23 实机演练继续待办。

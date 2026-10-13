@@ -2,16 +2,12 @@
   "configurations": [
     {
       "name": "windows-clang-x64",
-      "includePath": [
-        "${workspaceFolder}/**"
-      ],
+      "includePath": ["${workspaceFolder}/**"],
       "compilerPath": "clang",
       "cStandard": "${default}",
       "cppStandard": "${default}",
       "intelliSenseMode": "windows-clang-x64",
-      "compilerArgs": [
-        ""
-      ]
+      "compilerArgs": [""]
     }
   ],
   "version": 4
