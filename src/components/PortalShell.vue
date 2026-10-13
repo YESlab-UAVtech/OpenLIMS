@@ -3,31 +3,24 @@ import { brand } from '../config/site'
 import ThemeToggle from './ThemeToggle.vue'
 import NotificationCenter from './NotificationCenter.vue'
 import {
-  BadgePlus,
-  ClipboardCheck,
   Gift,
   ClipboardList,
   FolderKanban,
-  Home,
   LayoutDashboard,
-  LayoutTemplate,
   ListChecks,
   LogOut,
   Medal,
   MoreHorizontal,
   Search,
-  Sun,
   MessageSquareText,
-  Newspaper,
-  ShieldCheck,
   Trophy,
   UserRound,
-  UsersRound,
   Wallet,
 } from '@lucide/vue'
 import { computed, inject, ref, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDismissibleLayer } from '../composables/useDismissibleLayer'
+import { useFittingNavigation } from '../composables/useFittingNavigation'
 import { authState, logout } from '../services/authApi'
 import { commandShortcutLabel, openCommandPalette } from '../services/commandPalette'
 
@@ -55,26 +48,42 @@ const roleLabels = {
 }
 const accountLabel = computed(() => roleLabels[authState.account?.role] || authState.account?.role)
 const accountName = computed(() => authState.account?.displayName || authState.account?.username || '')
-const adminSectionActive = computed(() => route.path.startsWith('/admin'))
 const isMember = computed(() => Boolean(authState.account && authState.account.role !== 'VISITOR'))
-const morePaths = ['/profile', '/points', '/fund', '/competitions']
-const moreSectionActive = computed(() => morePaths.some((path) => route.path.startsWith(path)))
-const adminMenu = ref(null)
+const navigation = computed(() => {
+  const items = isMember.value
+    ? [
+        { to: '/profile', label: '个人主页', icon: UserRound },
+        { to: '/tasks', label: '任务', icon: ListChecks },
+        { to: '/bounties', label: '悬赏', icon: Gift },
+        { to: '/projects', label: '项目', icon: FolderKanban },
+      ]
+    : []
+  if (authState.account?.role === 'VISITOR') items.push({ to: '/application', label: '我的报名', icon: ClipboardList })
+  items.push({ to: '/discussions', label: '讨论', icon: MessageSquareText })
+  if (isMember.value)
+    items.push(
+      { to: '/points', label: '积分榜', icon: Trophy },
+      { to: '/fund', label: '实验室基金', icon: Wallet },
+      { to: '/competitions', label: '比赛管理', icon: Medal },
+    )
+  if (authState.account?.systemAdmin) items.push({ to: '/admin', label: '后台管理', icon: LayoutDashboard })
+  return items
+})
+const navContainer = ref(null)
+const navMeasurement = ref(null)
+const { visibleCount } = useFittingNavigation(
+  navContainer,
+  navMeasurement,
+  computed(() => navigation.value.length),
+)
+const visibleLinks = computed(() => navigation.value.slice(0, visibleCount.value))
+const overflowLinks = computed(() => navigation.value.slice(visibleCount.value))
+const moreSectionActive = computed(() => overflowLinks.value.some((item) => route.path.startsWith(item.to)))
 const moreMenu = ref(null)
-
-function closeAdminMenu() {
-  if (adminMenu.value) adminMenu.value.open = false
-}
 
 function closeMoreMenu() {
   if (moreMenu.value) moreMenu.value.open = false
 }
-
-useDismissibleLayer(adminMenu, {
-  isOpen: () => Boolean(adminMenu.value?.open),
-  close: closeAdminMenu,
-  focusTarget: () => adminMenu.value?.querySelector('summary'),
-})
 
 useDismissibleLayer(moreMenu, {
   isOpen: () => Boolean(moreMenu.value?.open),
@@ -85,7 +94,6 @@ useDismissibleLayer(moreMenu, {
 watch(
   () => route.fullPath,
   () => {
-    closeAdminMenu()
     closeMoreMenu()
   },
 )
@@ -110,53 +118,31 @@ async function signOut() {
       <RouterLink class="portal-brand" to="/" :aria-label="`返回 ${brand.name} 公开首页`">
         <img :src="brand.logo" :alt="brand.name" width="900" height="300" />
       </RouterLink>
-      <nav aria-label="成员系统导航">
-        <template v-if="isMember">
-          <RouterLink to="/today"><Sun :size="17" aria-hidden="true" />今日</RouterLink>
-          <RouterLink to="/tasks"><ListChecks :size="17" aria-hidden="true" />任务</RouterLink>
-          <RouterLink to="/bounties"><Gift :size="17" aria-hidden="true" />悬赏</RouterLink>
-          <RouterLink to="/projects"><FolderKanban :size="17" aria-hidden="true" />项目</RouterLink>
-        </template>
-        <RouterLink v-if="authState.account?.role === 'VISITOR'" to="/application"
-          ><ClipboardList :size="17" aria-hidden="true" />我的报名</RouterLink
-        >
-        <RouterLink to="/discussions"><MessageSquareText :size="17" aria-hidden="true" />讨论</RouterLink>
+      <nav ref="navContainer" class="portal-navigation" aria-label="成员系统导航">
+        <RouterLink v-for="item in visibleLinks" :key="item.to" :to="item.to">
+          <component :is="item.icon" :size="17" aria-hidden="true" />{{ item.label }}
+        </RouterLink>
         <details
+          v-if="overflowLinks.length"
           ref="moreMenu"
           class="portal-admin-menu portal-more-menu"
           @click="(event) => event.target.closest('a') && closeMoreMenu()"
         >
           <summary :class="{ active: moreSectionActive }"><MoreHorizontal :size="17" aria-hidden="true" />更多</summary>
           <div>
-            <RouterLink v-if="isMember" to="/profile"><UserRound :size="17" aria-hidden="true" />个人主页</RouterLink>
-            <RouterLink v-if="isMember" to="/points"><Trophy :size="17" aria-hidden="true" />积分榜</RouterLink>
-            <RouterLink v-if="isMember" to="/fund"><Wallet :size="17" aria-hidden="true" />实验室基金</RouterLink>
-            <RouterLink v-if="isMember" to="/competitions"><Medal :size="17" aria-hidden="true" />比赛管理</RouterLink>
-            <RouterLink to="/"><Home :size="17" aria-hidden="true" />公开首页</RouterLink>
+            <RouterLink v-for="item in overflowLinks" :key="item.to" :to="item.to">
+              <component :is="item.icon" :size="17" aria-hidden="true" />{{ item.label }}
+            </RouterLink>
           </div>
         </details>
-        <details
-          v-if="authState.account?.systemAdmin"
-          ref="adminMenu"
-          class="portal-admin-menu"
-          @click="(event) => event.target.closest('a') && closeAdminMenu()"
-        >
-          <summary :class="{ active: adminSectionActive }">
-            <LayoutDashboard :size="17" aria-hidden="true" />后台管理
-          </summary>
-          <div>
-            <RouterLink to="/admin" exact-active-class="router-link-exact-active"
-              ><LayoutDashboard :size="17" aria-hidden="true" />待处理总览</RouterLink
+        <div class="nav-measurement" inert aria-hidden="true">
+          <div ref="navMeasurement" class="portal-nav-measure">
+            <span v-for="item in navigation" :key="item.to"
+              ><component :is="item.icon" :size="17" />{{ item.label }}</span
             >
-            <RouterLink to="/admin/members"><UsersRound :size="17" aria-hidden="true" />成员管理</RouterLink>
-            <RouterLink to="/admin/points"><BadgePlus :size="17" aria-hidden="true" />积分管理</RouterLink>
-            <RouterLink to="/admin/recruitment"><ShieldCheck :size="17" aria-hidden="true" />招新管理</RouterLink>
-            <RouterLink to="/admin/tasks"><ClipboardCheck :size="17" aria-hidden="true" />任务管理</RouterLink>
-            <RouterLink to="/admin/bounties"><Gift :size="17" aria-hidden="true" />悬赏管理</RouterLink>
-            <RouterLink to="/admin/achievements"><Newspaper :size="17" aria-hidden="true" />成果管理</RouterLink>
-            <RouterLink to="/admin/homepage"><LayoutTemplate :size="17" aria-hidden="true" />主页编辑</RouterLink>
+            <span><MoreHorizontal :size="17" />更多</span>
           </div>
-        </details>
+        </div>
       </nav>
       <div class="portal-account">
         <button

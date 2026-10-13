@@ -1,7 +1,6 @@
 <script setup>
 import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import { Gift, Pencil, Plus, Send, Square, Trash2 } from '@lucide/vue'
-import PortalShell from '../components/PortalShell.vue'
 import AdminDrawer from '../components/AdminDrawer.vue'
 import LoadingSkeleton from '../components/LoadingSkeleton.vue'
 import { confirmAction } from '../services/confirm'
@@ -413,12 +412,16 @@ function loadSubtaskContent(subtaskId) {
 </script>
 
 <template>
-  <PortalShell title="悬赏管理" description="创建悬赏，管理接取、完成与奖金发放。">
-    <template #actions>
+  <section class="task-category" aria-label="悬赏任务">
+    <header class="tm-heading">
+      <div>
+        <h2>悬赏任务</h2>
+        <p>管理接取、完成与奖金发放。</p>
+      </div>
       <button class="ui-btn ui-btn--primary" type="button" @click="openCreate">
         <Plus :size="17" aria-hidden="true" />创建悬赏
       </button>
-    </template>
+    </header>
     <p class="task-toolbar-note admin-page-note">奖金线下发放；系统记录发放与领取状态。</p>
 
     <AdminDrawer
@@ -703,5 +706,5 @@ function loadSubtaskContent(subtaskId) {
         </div>
       </article>
     </TransitionGroup>
-  </PortalShell>
+  </section>
 </template>

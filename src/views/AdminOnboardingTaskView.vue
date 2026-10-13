@@ -1,8 +1,8 @@
 <script setup>
-import { ArrowLeft, CalendarClock, CheckCheck, ListChecks, RefreshCw, Save, X } from '@lucide/vue'
+import { CalendarClock, CheckCheck, ListChecks, RefreshCw, Save, X } from '@lucide/vue'
 import { computed, onMounted, reactive, ref } from 'vue'
-import PortalShell from '../components/PortalShell.vue'
 import LoadingSkeleton from '../components/LoadingSkeleton.vue'
+import { useUnsavedGuard } from '../composables/useUnsavedGuard'
 import { useToastFeedback } from '../composables/useToastFeedback'
 import DiscussionRichTextEditor from '../components/DiscussionRichTextEditor.vue'
 import TaskSubtaskEditor from '../components/TaskSubtaskEditor.vue'
@@ -41,6 +41,9 @@ const task = reactive({
   durationDays: 7,
   subtasks: [],
 })
+const taskSnapshot = ref('')
+const dirty = computed(() => Boolean(taskSnapshot.value) && JSON.stringify(task) !== taskSnapshot.value)
+useUnsavedGuard(dirty)
 const review = reactive({ decision: 'APPROVED', comment: '', exemptionReason: '' })
 
 const statusLabels = {
@@ -104,6 +107,7 @@ async function load() {
       title: item.title,
       hasContent: item.hasContent,
     }))
+    taskSnapshot.value = JSON.stringify(task)
     overview.value = data
   } catch (error) {
     errorMessage.value = error.message
@@ -238,9 +242,7 @@ async function submitReview(row) {
 </script>
 
 <template>
-  <PortalShell title="新手任务" description="维护共享子任务，并审核技能测试结果。">
-    <RouterLink class="task-back" to="/admin/tasks"><ArrowLeft :size="16" aria-hidden="true" />返回任务管理</RouterLink>
-
+  <section class="task-category" aria-label="新手任务">
     <p v-if="errorMessage" class="portal-state error" role="alert">{{ errorMessage }}</p>
 
     <LoadingSkeleton v-if="loading" variant="detail" :rows="3" label="正在读取新手任务" />
@@ -501,5 +503,5 @@ async function submitReview(row) {
         </TransitionGroup>
       </section>
     </template>
-  </PortalShell>
+  </section>
 </template>

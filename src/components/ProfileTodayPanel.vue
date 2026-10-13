@@ -1,35 +1,23 @@
 <script setup>
 import { animate } from 'motion'
-import { ArrowRight, CalendarClock, Gift, ListChecks, Search, Sparkles, Trophy } from '@lucide/vue'
+import { ArrowRight, Gift, ListChecks, Sparkles } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import PortalShell from '../components/PortalShell.vue'
+import DeadlinePanel from '../components/DeadlinePanel.vue'
 import LoadingSkeleton from '../components/LoadingSkeleton.vue'
-import { authState, getBountyBoard, getDeadlines, getMyTasks, getOwnPoints } from '../services/authApi'
-import { commandShortcutLabel, openCommandPalette } from '../services/commandPalette'
+import { getBountyBoard, getDeadlines, getMyTasks } from '../services/authApi'
+const props = defineProps({ pointsSummary: { type: Object, default: null } })
 
 const loading = ref(true)
 const errorMessage = ref('')
 const tasks = ref([])
 const deadlines = ref([])
-const points = ref(null)
+const points = computed(() => props.pointsSummary)
+const deadlineData = ref(null)
 const bounties = ref([])
 const serverToday = ref('')
 const statEls = ref([])
 
 const kinds = { STANDARD: '任务', BOUNTY: '悬赏', COMPETITION: '比赛', PROJECT: '项目', ONBOARDING: '新手任务' }
-
-const name = computed(() => authState.account?.displayName || authState.account?.username || '')
-const greeting = computed(() => {
-  const hour = new Date().getHours()
-  if (hour < 5) return '夜深了'
-  if (hour < 11) return '早上好'
-  if (hour < 14) return '中午好'
-  if (hour < 18) return '下午好'
-  return '晚上好'
-})
-const dateLabel = computed(() =>
-  new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' }).format(new Date()),
-)
 
 const activeTasks = computed(() =>
   tasks.value.filter((task) => task.status === 'PENDING' || task.status === 'REJECTED').filter((task) => !task.expired),
@@ -58,26 +46,21 @@ const monthPoints = computed(() => {
     .filter((item) => item.date.startsWith(prefix))
     .reduce((sum, item) => sum + Number(item.points || 0), 0)
 })
-const weekBars = computed(() => {
-  const map = new Map((points.value?.dailyPoints || []).map((item) => [item.date, Number(item.points) || 0]))
-  const base = Date.parse(today.value)
-  const days = Array.from({ length: 14 }, (_, index) => {
-    const date = new Date(base - (13 - index) * 86400000).toISOString().slice(0, 10)
-    return { date, points: map.get(date) || 0 }
-  })
-  const max = Math.max(1, ...days.map((day) => day.points))
-  return days.map((day) => ({ ...day, height: Math.max(6, Math.round((day.points / max) * 100)) }))
-})
 const openBounties = computed(() => bounties.value.filter((item) => item.claimable).slice(0, 3))
 
 const stats = computed(() => [
   { label: '进行中', value: activeTasks.value.length, hint: '待完成或需修改' },
   { label: '等待确认', value: waitingTasks.value.length, hint: '已提交，等管理员审核' },
-  { label: '7 天内截止', value: upcoming.value.length, hint: '任务、比赛与项目', tone: 'warning' },
+  {
+    label: '7 天内截止',
+    value: deadlineData.value ? upcoming.value.length : null,
+    hint: '任务、比赛与项目',
+    tone: 'warning',
+  },
   {
     label: '本月积分',
-    value: monthPoints.value,
-    hint: points.value ? `总排名第 ${points.value.totalRank || '—'}` : '',
+    value: points.value ? monthPoints.value : null,
+    hint: points.value?.totalRank ? `总排名第 ${points.value.totalRank}` : '积分汇总',
   },
 ])
 
@@ -109,16 +92,15 @@ async function countUp() {
 async function load() {
   errorMessage.value = ''
   try {
-    const [taskList, deadlineData, pointData, bountyList] = await Promise.all([
+    const [taskList, loadedDeadlines, bountyList] = await Promise.all([
       getMyTasks(),
       getDeadlines(true, { page: 0, pageSize: 30 }).catch(() => null),
-      getOwnPoints().catch(() => null),
       getBountyBoard().catch(() => []),
     ])
     tasks.value = taskList
-    deadlines.value = deadlineData?.entries || []
-    serverToday.value = deadlineData?.serverDate || ''
-    points.value = pointData
+    deadlineData.value = loadedDeadlines
+    deadlines.value = loadedDeadlines?.entries || []
+    serverToday.value = loadedDeadlines?.serverDate || ''
     bounties.value = bountyList
     loading.value = false
     countUp()
@@ -140,21 +122,19 @@ onBeforeUnmount(() => window.removeEventListener('openlims:deadlines-changed', r
 </script>
 
 <template>
-  <PortalShell :title="`${greeting}，${name}`" :description="`今天是${dateLabel}。这里是你今天需要知道的事。`">
-    <template #actions>
-      <button class="portal-secondary today-search" type="button" @click="openCommandPalette">
-        <Search :size="16" aria-hidden="true" />找点什么<kbd>{{ commandShortcutLabel }}</kbd>
-      </button>
-    </template>
-
+  <div class="profile-today-panel">
     <LoadingSkeleton v-if="loading" variant="cards" :rows="4" label="正在准备今日概览" />
-    <div v-else-if="errorMessage" class="portal-state error" role="alert">{{ errorMessage }}</div>
+    <div v-else-if="errorMessage" class="portal-state error" role="alert">
+      {{ errorMessage }} <button class="portal-secondary" type="button" @click="load">重试</button>
+    </div>
 
     <div v-else class="today">
       <section class="today-stats" aria-label="今日概览">
         <div v-for="(stat, index) in stats" :key="stat.label" class="today-stat" :data-tone="stat.tone">
           <small>{{ stat.label }}</small>
-          <strong :ref="(element) => (statEls[index] = element)">{{ stat.value.toLocaleString('zh-CN') }}</strong>
+          <strong :ref="(element) => (statEls[index] = element)">{{
+            stat.value == null ? '—' : stat.value.toLocaleString('zh-CN')
+          }}</strong>
           <span>{{ stat.hint }}</span>
         </div>
       </section>
@@ -214,69 +194,32 @@ onBeforeUnmount(() => window.removeEventListener('openlims:deadlines-changed', r
           </ul>
         </section>
 
-        <section class="today-week" aria-labelledby="today-week-title">
-          <header class="today-section-head">
-            <h2 id="today-week-title"><CalendarClock :size="18" aria-hidden="true" />接下来 7 天</h2>
-            <RouterLink to="/profile">完整日程<ArrowRight :size="15" aria-hidden="true" /></RouterLink>
-          </header>
-          <ol v-if="upcoming.length" class="today-timeline">
-            <li v-for="entry in upcoming" :key="`${entry.sourceType}-${entry.sourceId}-${entry.milestoneKey}`">
-              <span class="today-when" :data-soon="entry.days <= 1">{{ remainingLabel(entry.days) }}</span>
-              <RouterLink v-if="entry.href" :to="entry.href"
-                ><b>{{ entry.title }}</b
-                ><small>{{ kinds[entry.sourceType] || '' }} · {{ entry.milestone }}</small></RouterLink
-              >
-              <div v-else>
-                <b>{{ entry.title }}</b
-                ><small>{{ kinds[entry.sourceType] || '' }} · {{ entry.milestone }}</small>
-              </div>
-            </li>
-          </ol>
-          <p v-else class="today-quiet">接下来 7 天没有截止事项。</p>
-        </section>
-
-        <section class="today-points" aria-labelledby="today-points-title">
-          <header class="today-section-head">
-            <h2 id="today-points-title"><Trophy :size="18" aria-hidden="true" />近两周积分</h2>
-            <RouterLink to="/points">积分榜<ArrowRight :size="15" aria-hidden="true" /></RouterLink>
-          </header>
-          <div class="today-bars" role="img" :aria-label="`近 14 天积分，本月共 ${monthPoints} 分`">
-            <span
-              v-for="(bar, index) in weekBars"
-              :key="bar.date"
-              :style="{ '--h': `${bar.height}%`, '--i': index }"
-              :data-empty="bar.points === 0"
-              :title="`${bar.date}：${bar.points} 分`"
-            ></span>
-          </div>
-          <p class="today-quiet">
-            总积分 <b>{{ points?.totalPoints ?? 0 }}</b
-            ><template v-if="points?.totalRank"> · 总排名第 {{ points.totalRank }}</template>
-          </p>
-        </section>
-
-        <section class="today-bounties" aria-labelledby="today-bounty-title">
-          <header class="today-section-head">
-            <h2 id="today-bounty-title"><Gift :size="18" aria-hidden="true" />可以接的悬赏</h2>
-            <RouterLink to="/bounties">悬赏榜<ArrowRight :size="15" aria-hidden="true" /></RouterLink>
-          </header>
-          <ul v-if="openBounties.length" class="today-list">
-            <li v-for="bounty in openBounties" :key="bounty.taskId">
-              <RouterLink :to="`/bounties/${bounty.taskId}`">
-                <i data-status="BOUNTY" aria-hidden="true"></i>
-                <span
-                  ><b>{{ bounty.title }}</b
-                  ><small
-                    >{{ bounty.prize?.points > 0 ? `+${bounty.prize.points} 积分` : '不计积分' }} ·
-                    {{ bounty.daysRemaining != null ? `还剩 ${bounty.daysRemaining} 天` : '' }}</small
-                  ></span
-                >
-              </RouterLink>
-            </li>
-          </ul>
-          <p v-else class="today-quiet">暂时没有可接取的悬赏。</p>
-        </section>
+        <DeadlinePanel personal :initial-data="deadlineData" />
       </div>
     </div>
-  </PortalShell>
+    <slot />
+    <div v-if="!loading && !errorMessage" class="profile-bounty-recommendations">
+      <section class="today-bounties" aria-labelledby="today-bounty-title">
+        <header class="today-section-head">
+          <h2 id="today-bounty-title"><Gift :size="18" aria-hidden="true" />可以接的悬赏</h2>
+          <RouterLink to="/bounties">悬赏榜<ArrowRight :size="15" aria-hidden="true" /></RouterLink>
+        </header>
+        <ul v-if="openBounties.length" class="today-list">
+          <li v-for="bounty in openBounties" :key="bounty.taskId">
+            <RouterLink :to="`/bounties/${bounty.taskId}`">
+              <i data-status="BOUNTY" aria-hidden="true"></i>
+              <span
+                ><b>{{ bounty.title }}</b
+                ><small
+                  >{{ bounty.prize?.points > 0 ? `+${bounty.prize.points} 积分` : '不计积分' }} ·
+                  {{ bounty.daysRemaining != null ? `还剩 ${bounty.daysRemaining} 天` : '' }}</small
+                ></span
+              >
+            </RouterLink>
+          </li>
+        </ul>
+        <p v-else class="today-quiet">暂时没有可接取的悬赏。</p>
+      </section>
+    </div>
+  </div>
 </template>

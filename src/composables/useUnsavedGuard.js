@@ -1,5 +1,5 @@
 import { onBeforeUnmount, onMounted, unref } from 'vue'
-import { onBeforeRouteLeave } from 'vue-router'
+import { onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 import { confirmAction } from '../services/confirm'
 
 const discardOptions = {
@@ -31,6 +31,7 @@ export function useUnsavedGuard(isDirty, options = {}) {
   }
 
   onBeforeRouteLeave(() => confirmDiscard())
+  onBeforeRouteUpdate((to, from) => (to.query.type !== from.query.type ? confirmDiscard() : true))
   onMounted(() => window.addEventListener('beforeunload', beforeUnload))
   onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
 

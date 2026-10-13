@@ -21,8 +21,11 @@ import {
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { authState } from '../services/authApi'
 import { fetchPublicHome } from '../services/publicApi'
+import { useFittingNavigation } from '../composables/useFittingNavigation'
 
 const menuOpen = ref(false)
+const publicHeader = ref(null)
+const publicNavMeasurement = ref(null)
 const activeProjectFilter = ref('全部')
 const selectedProject = ref(null)
 const modalClose = ref(null)
@@ -268,6 +271,42 @@ const homepageContent = ref(normalizeHomepageContent(defaultHomepageContent))
 
 const projectFilters = computed(() => ['全部', ...new Set(projects.value.map((project) => project.category))])
 const displayOptions = computed(() => homepageContent.value.display)
+const publicNavItems = computed(() =>
+  [
+    { visible: displayOptions.value.showProjects, label: '项目' },
+    { visible: displayOptions.value.showAbout, label: '关于' },
+    { visible: displayOptions.value.showMembers, label: '成员' },
+    { visible: displayOptions.value.showAchievements, label: '成果' },
+    { visible: displayOptions.value.showPartners, label: '伙伴' },
+    { visible: true, label: '讨论板' },
+  ].filter((item) => item.visible),
+)
+const { visibleCount: publicVisibleCount } = useFittingNavigation(
+  publicHeader,
+  publicNavMeasurement,
+  computed(() => publicNavItems.value.length),
+  (header) => {
+    const styles = getComputedStyle(header)
+    const tools = header.querySelector('.ah-nav-tools')
+    const button = tools?.querySelector('.ah-menu-button')
+    const buttonWidth = button?.getBoundingClientRect().width || 0
+    const toolsWidth =
+      (tools?.getBoundingClientRect().width || 0) -
+      (buttonWidth ? buttonWidth + (parseFloat(getComputedStyle(tools).gap) || 0) : 0)
+    return (
+      header.clientWidth -
+      parseFloat(styles.paddingLeft) -
+      parseFloat(styles.paddingRight) -
+      (header.querySelector('.ah-brand')?.getBoundingClientRect().width || 0) -
+      toolsWidth -
+      2 * (parseFloat(styles.gap) || 0)
+    )
+  },
+)
+const publicNavCollapsed = computed(() => publicVisibleCount.value < publicNavItems.value.length)
+watch(publicNavCollapsed, (collapsed) => {
+  if (!collapsed) menuOpen.value = false
+})
 const filteredProjects = computed(() => {
   if (displayOptions.value.projectSelectionMode === 'HIDDEN') return []
   const selectedProjectIds = homepageContent.value.featuredProjectIds || []
@@ -323,7 +362,7 @@ const visibleNewsItems = computed(() => newsItems.value.slice(0, displayOptions.
 const visibleCompetitionResults = computed(() =>
   competitionResults.value.slice(0, displayOptions.value.competitionLimit),
 )
-const accountDestination = computed(() => (authState.account?.role === 'VISITOR' ? '/application' : '/today'))
+const accountDestination = computed(() => (authState.account?.role === 'VISITOR' ? '/application' : '/profile'))
 const accountName = computed(() => authState.account?.displayName || authState.account?.username || '')
 const enabledExternalLinks = computed(() =>
   (homepageContent.value.externalLinks || []).filter((link) => link.enabled && link.url),
@@ -668,7 +707,7 @@ onBeforeUnmount(() => {
     </div>
     <a class="skip-link" href="#top">跳到主要内容</a>
 
-    <header class="ah-nav">
+    <header ref="publicHeader" class="ah-nav" :class="{ 'nav-collapsed': publicNavCollapsed }">
       <a class="ah-brand" href="#top" :aria-label="`${profile.displayName}首页`" @click.prevent="scrollTo('#top')">
         <img :src="brand.logo" :alt="profile.name" width="900" height="300" />
       </a>
@@ -680,6 +719,12 @@ onBeforeUnmount(() => {
         <button v-if="displayOptions.showPartners" type="button" @click="scrollTo('#partners')">伙伴</button>
         <RouterLink to="/discussions">讨论板</RouterLink>
       </nav>
+      <div class="nav-measurement" inert aria-hidden="true">
+        <div ref="publicNavMeasurement" class="ah-nav-measure">
+          <span v-for="item in publicNavItems" :key="item.label">{{ item.label }}</span>
+          <span><Menu :size="20" /></span>
+        </div>
+      </div>
       <div class="ah-nav-tools">
         <ThemeToggle />
         <RouterLink

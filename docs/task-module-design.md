@@ -980,3 +980,9 @@ public TaskGrantResult grantForTask(UUID taskId, UUID memberProfileId, int point
 - 实施结果和实际验收记录见根目录 DEVLOG.md 的 2026-10-02 施工条目。
 
 规则来源：`ui-ux-pro-max` 查询 `filter selection feedback --domain ux`，采用匹配结果中的 Chip Collection Reflow（完整标签、集合换行）；查询 `form checkbox v-model --stack vue`，采用原生控件和双向绑定。其余交互按现有任务管理规范与 skill 的可访问性、表单反馈规则设计。页面级设计规范同步记录按人补发规则。
+
+## 2026-10-12：统一任务管理分类（已审核）
+
+- 本次界面整合需求与技术设计已获用户审核通过，依据 `docs/navigation-profile-task-requirements.md` 和 `docs/navigation-profile-task-design.md`。
+- 普通、新手、悬赏任务共用 `/admin/tasks` 管理容器，用 `type=standard|onboarding|bounty` 记录分类。旧新手、悬赏入口兼容跳转；名单、进度、子任务详情仍使用原地址，返回对应分类。
+- 侧栏只保留任务管理入口；分类切换保留标题与导航，并对未保存内容确认。任务发放、审核、到期冻结/结算、转正与奖金履约规则不变，无迁移。

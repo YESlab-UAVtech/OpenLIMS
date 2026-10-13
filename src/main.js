@@ -13,5 +13,6 @@ import './styles/ui.css'
 import './styles/admin-flows.css'
 import './styles/experience.css'
 import './styles/home-apple.css'
+import './styles/navigation-profile.css'
 
 createApp(App).use(router).mount('#app')
